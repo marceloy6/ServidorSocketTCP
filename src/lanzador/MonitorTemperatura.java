@@ -46,7 +46,7 @@ public class MonitorTemperatura implements MensajeClienteEscuchador{
     @Override
     public void onMensajeRecivido(ClienteEvento clienteEvento, String mensaje) {
         System.err.println("MONITOR TEMPERATURA ESCUCHO EL MENSAJE");
-        if (mensaje!=null || !mensaje.trim().isEmpty()) {
+        if (mensaje!=null || mensaje.length()<11 || !mensaje.trim().isEmpty()) {
             //Leer los valores y parsearlos
             Temperatura temperatura = LeerObjetoTemperatura(mensaje);
             
@@ -60,6 +60,8 @@ public class MonitorTemperatura implements MensajeClienteEscuchador{
             String[] notificacion = ObtenerMensajeNotificacion(lista, temperatura.getTemperatura());
             System.err.println("ENVIANDO UN CORREO a: " + notificacion[0]);
             System.err.println("CON MENSAJE: " + notificacion[1]);
+        } else {
+            System.err.println("Mensaje no parseable recibido!!!");
         }
     }
 
