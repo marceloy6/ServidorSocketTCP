@@ -114,7 +114,7 @@ public class ServidorSocket implements ConexionEscuchador, MensajeClienteEscucha
     @Override
     public void onMensajeRecivido(ClienteEvento clienteEvento, String mensaje) {
         //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-        System.out.println("*****onMensajeRecibido");
+        System.out.println("*****onMensajeRecibido " + this.getClass().getName());
         System.out.println(clienteEvento.getId() + " dice: " + mensaje);
     }
 

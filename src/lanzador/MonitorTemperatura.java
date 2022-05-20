@@ -46,7 +46,7 @@ public class MonitorTemperatura implements MensajeClienteEscuchador{
     @Override
     public void onMensajeRecivido(ClienteEvento clienteEvento, String mensaje) {
         System.err.println("MONITOR TEMPERATURA ESCUCHO EL MENSAJE");
-        if (mensaje!=null || mensaje.length()<11 || !mensaje.trim().isEmpty()) {
+        if (mensaje!=null && !mensaje.trim().isEmpty() && mensaje.length()>10) {
             //Leer los valores y parsearlos
             Temperatura temperatura = LeerObjetoTemperatura(mensaje);
             
@@ -54,12 +54,17 @@ public class MonitorTemperatura implements MensajeClienteEscuchador{
             System.err.println(mensaje);
 
             //insertar los valores en la base de datos;
-            TemperaturaDAO.ingresarTemperatura(temperatura);
+            if (temperatura!=null) {
+                TemperaturaDAO.ingresarTemperatura(temperatura);
             
-            //comparar con las reglas de la BD para enviar un correo electronico
-            String[] notificacion = ObtenerMensajeNotificacion(lista, temperatura.getTemperatura());
-            System.err.println("ENVIANDO UN CORREO a: " + notificacion[0]);
-            System.err.println("CON MENSAJE: " + notificacion[1]);
+            
+                //comparar con las reglas de la BD para enviar un correo electronico
+                String[] notificacion = ObtenerMensajeNotificacion(lista, temperatura.getTemperatura());
+                System.err.println("ENVIANDO UN CORREO a: " + notificacion[0]);
+                System.err.println("CON MENSAJE: " + notificacion[1]);
+            } else {
+                System.err.println("ERROR datos del sensor no legibles!");
+            }
         } else {
             System.err.println("Mensaje no parseable recibido!!!");
         }
@@ -100,11 +105,16 @@ public class MonitorTemperatura implements MensajeClienteEscuchador{
         int posVTiempo = mensaje.lastIndexOf(tiempo) + tiempo.length();
         String vtiempo = mensaje.substring(posVTiempo, mensaje.length());
 
-        Temperatura tobjeto = new Temperatura();
-        tobjeto.setTemperatura(Float.parseFloat(vt));
-        tobjeto.setHumedad(Float.parseFloat(vh));
-        tobjeto.setIdmicrocontrolador(vmac);
-        tobjeto.setFechahora(Long.parseLong(vtiempo));
+        Temperatura tobjeto;
+        try {
+            tobjeto = new Temperatura();
+            tobjeto.setTemperatura(Float.parseFloat(vt));
+            tobjeto.setHumedad(Float.parseFloat(vh));
+            tobjeto.setIdmicrocontrolador(vmac);
+            tobjeto.setFechahora(Long.parseLong(vtiempo));
+        } catch (NumberFormatException numberFormatException) {
+            return null;
+        }
         return tobjeto;
     }
 }
