@@ -17,11 +17,6 @@ public class ClienteEvento {
     private int id;
     private HiloMensajesCliente hiloDatos;
     private Socket socketCliente;
-
-//    public ClienteEvento() {
-//        conexion = null;
-//        hiloDatos = null;
-//    }
     
     public ClienteEvento(Socket socketCliente) {
         this.socketCliente = socketCliente;

@@ -47,10 +47,12 @@ public class ServidorSocket implements ConexionEscuchador, MensajeClienteEscucha
     public void Iniciar() {
         System.out.println("Servidor Iniciado en puerto: " + puerto);
         hiloConexiones.AgregarEscuchadorConexiones(this);
+        hiloConexiones.AgregarEscuchadorMensajes(this);
         hiloConexiones.start();
         
         System.out.println("Tamanho lista EscuchadorConexiones = " + hiloConexiones.getListaEscuchadorConexiones().size());
         System.out.println("Tamanho lista EscuchadorMensajes = " + hiloConexiones.getListaEscuchadorMensajes().size());
+        System.out.println("Tamanho lista de clientes conectados = " + listaClientesConectados.size());
     }
     
     public void Detener() {
@@ -60,7 +62,6 @@ public class ServidorSocket implements ConexionEscuchador, MensajeClienteEscucha
         //deteniendo los hilosMensajesCliente de cada Cliente Conectado
         for (ClienteEvento ce : listaClientesConectados) {
             System.out.println("Deteniendo HILOS de Lista de Escuchadores!");
-                //ce.getHiloDatos().eliminarEscuchadorMensajes(this);
             ce.getHiloDatos().Detener();
         }
         System.out.println("Deteniendo Hilo de Conexiones!!!");
@@ -78,12 +79,11 @@ public class ServidorSocket implements ConexionEscuchador, MensajeClienteEscucha
     @Override
     public void onClienteConectado(ClienteEvento clienteEvento) {
         System.out.println("OnClienteConectado*****");
-        //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
         clienteEvento.setId(clienteEvento.hashCode());
-        //clienteEvento.setHiloDatos(new HiloMensajesCliente(clienteEvento.getSocketCliente()));
+        
         clienteEvento.setHiloDatos(new HiloMensajesCliente(clienteEvento, hiloConexiones.getListaEscuchadorConexiones(), hiloConexiones.getListaEscuchadorMensajes()));
             //clienteEvento.getHiloDatos().agregarEscuchadorMensajes(this);
-        hiloConexiones.AgregarEscuchadorMensajes(this);
+//        hiloConexiones.AgregarEscuchadorMensajes(this);
         clienteEvento.getHiloDatos().start();
         listaClientesConectados.add(clienteEvento);
         
@@ -98,16 +98,11 @@ public class ServidorSocket implements ConexionEscuchador, MensajeClienteEscucha
         System.out.println("ID de cliente desconectado: " + cliente.getId());
         cliente.getHiloDatos().Detener();
             //cliente.getHiloDatos().eliminarEscuchadorMensajes(this);
-        hiloConexiones.EliminarEscuchadorMensajes(this);
-        try {
-            cliente.getSocketCliente().close();
-            listaClientesConectados.remove(cliente);
-            System.out.println("Borrado Cliente ID: " + cliente.getId());
-            System.out.println("Tamanho lista de clientes conectados = " + listaClientesConectados.size());
-        } catch (IOException ex) {
-            Logger.getLogger(ServidorSocket.class.getName()).log(Level.SEVERE, null, ex);
-        }
+        //hiloConexiones.EliminarEscuchadorMensajes(this);
         
+        listaClientesConectados.remove(cliente);
+        System.out.println("Borrado Cliente ID: " + cliente.getId());
+        System.out.println("Tamanho lista de clientes conectados = " + listaClientesConectados.size());
     }
 
     
@@ -115,7 +110,7 @@ public class ServidorSocket implements ConexionEscuchador, MensajeClienteEscucha
     public void onMensajeRecivido(ClienteEvento clienteEvento, String mensaje) {
         //throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
         System.out.println("*****onMensajeRecibido " + this.getClass().getName());
-        System.out.println(clienteEvento.getId() + " dice: " + mensaje);
+        System.out.println("cliente " + clienteEvento.getId() + " dice: " + mensaje);
     }
 
     @Override
@@ -129,6 +124,8 @@ public class ServidorSocket implements ConexionEscuchador, MensajeClienteEscucha
     
     public void AgregarEscuchadorMensajes(MensajeClienteEscuchador mensajeClienteEscuchador) {
         hiloConexiones.AgregarEscuchadorMensajes(mensajeClienteEscuchador);
+        System.out.println("Agregado Nuevo escuchador de mensajes!");
+        System.out.println("Tamanho lista EscuchadorMensajes = " + hiloConexiones.getListaEscuchadorMensajes().size());
     }
     
     public void EliminarEscuchadorMensajes(MensajeClienteEscuchador mensajeClienteEscuchador) {

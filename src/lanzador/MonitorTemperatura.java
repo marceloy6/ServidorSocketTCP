@@ -22,51 +22,44 @@ import servidor.ServidorSocketTCPV1;
 public class MonitorTemperatura implements MensajeClienteEscuchador{
     
     static List<Regla> lista = ReglaDAO.LeerReglas();
+    static Regla reglacritica;
 
     /**
      * @param args the command line arguments
      */
     public static void main(String[] args) {
-        ServidorSocketTCPV1.main(args);
-        ServidorSocketTCPV1.AgregarEscuchadorMensajes(new MonitorTemperatura());
-//        MonitorTemperatura m = new MonitorTemperatura();
-//        m.Iniciar(args);
-//        m.PonerAEscuchar();
+        MonitorTemperatura m = new MonitorTemperatura();
+        m.Iniciar(args);
+        reglacritica = m.DefinirReglaCritica(4, lista);
         System.out.println("Monitor TEMPERATURA");
     }
     
     public void Iniciar(String[] args) {
         ServidorSocketTCPV1.main(args);
-    }
-    
-    public void PonerAEscuchar() {
         ServidorSocketTCPV1.AgregarEscuchadorMensajes(this);
     }
 
     @Override
     public void onMensajeRecivido(ClienteEvento clienteEvento, String mensaje) {
         System.err.println("MONITOR TEMPERATURA ESCUCHO EL MENSAJE");
-        if (mensaje!=null && !mensaje.trim().isEmpty() && mensaje.length()>10) {
-            //Leer los valores y parsearlos
-            Temperatura temperatura = LeerObjetoTemperatura(mensaje);
-            
-            //mostrar los valores llagados
-            System.err.println(mensaje);
+        //leer los valores del MENSAJE
+        Temperatura temperatura = LeerObjetoTemperatura(mensaje);
 
-            //insertar los valores en la base de datos;
-            if (temperatura!=null) {
-                TemperaturaDAO.ingresarTemperatura(temperatura);
+        //mostrar los valores llegados
+        System.err.println(mensaje);
+
+        //insertar los valores en la base de datos;
+        if (temperatura != null) {
+            TemperaturaDAO.ingresarTemperatura(temperatura);
+
+            //obtener  la notificacion y correo para cada Temperatura recibida por el ESP8266
+            String[] notificacion = ObtenerMensajeNotificacion(lista, temperatura.getTemperatura());
+            System.out.println("NOTIFICACION PARA ESTA TEMPERATURA ES: " + notificacion[1] + " PARA: " + notificacion[0]);
             
-            
-                //comparar con las reglas de la BD para enviar un correo electronico
-                String[] notificacion = ObtenerMensajeNotificacion(lista, temperatura.getTemperatura());
-                System.err.println("ENVIANDO UN CORREO a: " + notificacion[0]);
-                System.err.println("CON MENSAJE: " + notificacion[1]);
-            } else {
-                System.err.println("ERROR datos del sensor no legibles!");
-            }
+            //Compara si Temperatura esta en una Regla Critica para enviar un correo electronico
+            NotificarSiCumpleRegla(temperatura.getTemperatura(), reglacritica);
         } else {
-            System.err.println("Mensaje no parseable recibido!!!");
+            System.err.println("El Mensaje no es Tipo Temperatura!");
         }
     }
 
@@ -75,10 +68,12 @@ public class MonitorTemperatura implements MensajeClienteEscuchador{
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
     
-    String[] ObtenerMensajeNotificacion(List<Regla> listaReglas, float t) {
+    public String[] ObtenerMensajeNotificacion(List<Regla> listaReglas, float t) {
+        System.out.println("OBTENIENDO MENSAJE DE NOTIFICACION!");
         String[] res = new String[2];
         for (Regla regla : listaReglas) {
-            if(t>=regla.getRangoinicial() && t<=regla.getRangofinal()){
+            //RangoFinal seria el tope, al que no puede llegar; porque entonces formaria parte del siguiente rango
+            if(t>=regla.getRangoinicial() && t<regla.getRangofinal()){
                 res[0] = regla.getDestinatario();
                 res[1] = regla.getMensaje();
             }
@@ -86,35 +81,65 @@ public class MonitorTemperatura implements MensajeClienteEscuchador{
         return res;
     }
     
+    public Regla DefinirReglaCritica(int idregla, List<Regla> listaReglas) {
+        Regla reglaf = null;
+        for (int i = 0; i < listaReglas.size(); i++) {
+            if (listaReglas.get(i).getId()==idregla) {
+                reglaf = listaReglas.get(i);
+            }
+        }
+        return reglaf;
+    }
+    
+    public void NotificarSiCumpleRegla(float t, Regla regla) {
+        if (regla!=null) {
+            if (t >= regla.getRangoinicial() && t < regla.getRangofinal()) {
+                System.out.println("REGLA CRITICA!!!");
+                System.out.println("Enviando correo a: " + regla.getDestinatario());
+                System.out.println("con mensaje: " + regla.getMensaje());
+            } else {
+                System.out.println("No es regla critica. No se envio ningun correo");
+            }
+        }
+    }
+    
     
     public Temperatura LeerObjetoTemperatura(String mensaje) {
-        String temperatura = "temperatura=";
-        String humedad = "humedad=";
-        String mac = "mac=";
-        String tiempo = "tiempo=";
-        
-        int posVT = mensaje.lastIndexOf(temperatura) + temperatura.length();
-        String vt = mensaje.substring(posVT, posVT+5);
-        
-        int posVH = mensaje.lastIndexOf(humedad) + humedad.length();
-        String vh = mensaje.substring(posVH, posVH+5);
-        
-        int posVMAC = mensaje.lastIndexOf(mac) + mac.length();
-        String vmac = mensaje.substring(posVMAC, posVMAC+17);
-        
-        int posVTiempo = mensaje.lastIndexOf(tiempo) + tiempo.length();
-        String vtiempo = mensaje.substring(posVTiempo, mensaje.length());
+        if (mensaje != null && !mensaje.trim().isEmpty()) {
+            Temperatura tobjeto;
+            try {
+                String temperatura = "temperatura=";
+                String humedad = "humedad=";
+                String mac = "mac=";
+                String tiempo = "tiempo=";
 
-        Temperatura tobjeto;
-        try {
-            tobjeto = new Temperatura();
-            tobjeto.setTemperatura(Float.parseFloat(vt));
-            tobjeto.setHumedad(Float.parseFloat(vh));
-            tobjeto.setIdmicrocontrolador(vmac);
-            tobjeto.setFechahora(Long.parseLong(vtiempo));
-        } catch (NumberFormatException numberFormatException) {
+                int posVT = mensaje.lastIndexOf(temperatura) + temperatura.length();
+                String vt = mensaje.substring(posVT, posVT + 5);
+
+                int posVH = mensaje.lastIndexOf(humedad) + humedad.length();
+                String vh = mensaje.substring(posVH, posVH + 5);
+
+                int posVMAC = mensaje.lastIndexOf(mac) + mac.length();
+                String vmac = mensaje.substring(posVMAC, posVMAC + 17);
+
+                int posVTiempo = mensaje.lastIndexOf(tiempo) + tiempo.length();
+                String vtiempo = mensaje.substring(posVTiempo, mensaje.length());
+
+                tobjeto = new Temperatura();
+                tobjeto.setTemperatura(Float.parseFloat(vt));
+                tobjeto.setHumedad(Float.parseFloat(vh));
+                tobjeto.setIdmicrocontrolador(vmac);
+                tobjeto.setFechahora(Long.parseLong(vtiempo));
+            } catch (NumberFormatException numberFormatException) {
+                return null;
+            } catch (Exception e) {
+                System.err.println("ERROR con el String.class " + e.getMessage());
+                return null;
+            }
+            return tobjeto;
+        } else
             return null;
-        }
-        return tobjeto;
     }
+    
+    
 }

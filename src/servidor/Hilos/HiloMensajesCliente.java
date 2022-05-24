@@ -43,14 +43,6 @@ public class HiloMensajesCliente extends Thread{
             Logger.getLogger(HiloMensajesCliente.class.getName()).log(Level.SEVERE, null, ex);
         }
     }
-    
-//    public void agregarEscuchadorMensajes(MensajeClienteEscuchador mensajeClienteEscuchador) {
-//        listaEscuchadorMensajes.add(mensajeClienteEscuchador);
-//    }
-//    
-//    public void eliminarEscuchadorMensajes(MensajeClienteEscuchador mensajeClienteEscuchador) {
-//        listaEscuchadorMensajes.remove(mensajeClienteEscuchador);
-//    }
 
     @Override
     public void run() {
@@ -78,7 +70,12 @@ public class HiloMensajesCliente extends Thread{
     }
     
     public void Detener() {
-        sw = false;
+        try {
+            clienteEvento.getSocketCliente().close();
+            sw = false;
+        } catch (IOException ex) {
+//            Logger.getLogger(HiloMensajesCliente.class.getName()).log(Level.SEVERE, null, ex);
+        }
     }
     
 }
