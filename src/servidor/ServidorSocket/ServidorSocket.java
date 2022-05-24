@@ -79,6 +79,7 @@ public class ServidorSocket implements ConexionEscuchador, MensajeClienteEscucha
     @Override
     public void onClienteConectado(ClienteEvento clienteEvento) {
         System.out.println("OnClienteConectado*****");
+        System.out.println(clienteEvento.getSocketCliente().getRemoteSocketAddress().toString());
         clienteEvento.setId(clienteEvento.hashCode());
         
         clienteEvento.setHiloDatos(new HiloMensajesCliente(clienteEvento, hiloConexiones.getListaEscuchadorConexiones(), hiloConexiones.getListaEscuchadorMensajes()));

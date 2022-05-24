@@ -131,9 +131,10 @@ public class MonitorTemperatura implements MensajeClienteEscuchador{
                 tobjeto.setIdmicrocontrolador(vmac);
                 tobjeto.setFechahora(Long.parseLong(vtiempo));
             } catch (NumberFormatException numberFormatException) {
+                System.err.println("ERROR al parsear los numeros. " + numberFormatException.getMessage());
                 return null;
             } catch (Exception e) {
-                System.err.println("ERROR con el String.class " + e.getMessage());
+                System.err.println("String no compatible. " + e.getMessage());
                 return null;
             }
             return tobjeto;
