@@ -3,22 +3,28 @@
 "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
 <!-- Generated Jun 10, 2022 7:35:31 AM by Hibernate Tools 4.3.1 -->
 <hibernate-mapping>
-    <class name="conexiondb.pojos.Temperatura" table="temperatura" catalog="dbmonitortemperatura" optimistic-lock="version">
+    <class name="conexiondb.pojos.Sensor" table="sensor" catalog="dbmonitortemperatura" optimistic-lock="version">
         <id name="id" type="java.lang.Long">
             <column name="id" />
             <generator class="identity" />
         </id>
-        <property name="idmicrocontrolador" type="string">
-            <column name="idmicrocontrolador" length="30" not-null="true" />
+        <property name="idsensor" type="string">
+            <column name="idsensor" length="30" not-null="true" />
         </property>
-        <property name="fechahora" type="long">
-            <column name="fechahora" not-null="true" />
+        <property name="fechaconexion" type="long">
+            <column name="fechaconexion" not-null="true" />
         </property>
         <property name="temperatura" type="float">
             <column name="temperatura" precision="12" scale="0" not-null="true" />
         </property>
         <property name="humedad" type="float">
             <column name="humedad" precision="12" scale="0" not-null="true" />
+        </property>
+        <property name="fechalectura" type="long">
+            <column name="fechalectura" not-null="true" />
+        </property>
+        <property name="conectado" type="boolean">
+            <column name="conectado" not-null="true" />
         </property>
     </class>
 </hibernate-mapping>

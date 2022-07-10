@@ -24,10 +24,11 @@ public class TemperaturaDAO {
         try {
             session.save(t);
             tx.commit();
-            session.close();
         } catch (HibernateException hibernateException) {
             tx.rollback();
             System.out.println(hibernateException.getMessage());
+        } finally {
+            session.close();
         }
     }
 

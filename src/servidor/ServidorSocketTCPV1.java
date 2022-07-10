@@ -11,6 +11,7 @@ import java.io.IOException;
 import java.util.Properties;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import servidor.Escuchadores.ConexionEscuchador;
 import servidor.Escuchadores.MensajeClienteEscuchador;
 import servidor.ServidorSocket.ServidorSocket;
 
@@ -54,6 +55,10 @@ public class ServidorSocketTCPV1 {
     
     public static void AgregarEscuchadorMensajes(MensajeClienteEscuchador mensajeClienteEscuchador) {
         servidorSocket.AgregarEscuchadorMensajes(mensajeClienteEscuchador);
+    }
+    
+    public static void AgregarEscuchadorConexiones(ConexionEscuchador conexionEscuchador) {
+        servidorSocket.AgregarEscuchadorConexiones(conexionEscuchador);
     }
     
 }

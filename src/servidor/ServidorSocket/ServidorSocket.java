@@ -5,10 +5,14 @@
  */
 package servidor.ServidorSocket;
 
+import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -28,6 +32,7 @@ public class ServidorSocket implements ConexionEscuchador, MensajeClienteEscucha
     private ServerSocket servidor;
     private List<ClienteEvento> listaClientesConectados;
     private HiloConexiones hiloConexiones;
+    private PrintWriter flujosalida;
     
     public ServidorSocket(){
         servidor = null;
@@ -80,6 +85,7 @@ public class ServidorSocket implements ConexionEscuchador, MensajeClienteEscucha
     public void onClienteConectado(ClienteEvento clienteEvento) {
         System.out.println("OnClienteConectado*****");
         System.out.println(clienteEvento.getSocketCliente().getRemoteSocketAddress().toString());
+        EnviarMensaje(clienteEvento);
         clienteEvento.setId(clienteEvento.hashCode());
         
         clienteEvento.setHiloDatos(new HiloMensajesCliente(clienteEvento, hiloConexiones.getListaEscuchadorConexiones(), hiloConexiones.getListaEscuchadorMensajes()));
@@ -123,6 +129,22 @@ public class ServidorSocket implements ConexionEscuchador, MensajeClienteEscucha
         
     }
     
+    public void EnviarMensaje(ClienteEvento clienteEvento) {
+        try {
+            flujosalida = new PrintWriter(new BufferedWriter(new OutputStreamWriter(clienteEvento.getSocketCliente().getOutputStream())), true);
+            String mensajecliente = String.valueOf(new Date().getTime());
+            System.out.println(mensajecliente);
+            System.out.println(mensajecliente.length());
+            flujosalida.println(mensajecliente);
+        } catch (IOException ex) {
+//            Logger.getLogger(ServidorSocket.class.getName()).log(Level.SEVERE, null, ex);
+            System.out.println("ERROR> " + ex.getMessage());
+        } finally {
+//            flujosalida.close();
+        }
+        
+    }
+    
     public void AgregarEscuchadorMensajes(MensajeClienteEscuchador mensajeClienteEscuchador) {
         hiloConexiones.AgregarEscuchadorMensajes(mensajeClienteEscuchador);
         System.out.println("Agregado Nuevo escuchador de mensajes!");
@@ -131,6 +153,16 @@ public class ServidorSocket implements ConexionEscuchador, MensajeClienteEscucha
     
     public void EliminarEscuchadorMensajes(MensajeClienteEscuchador mensajeClienteEscuchador) {
         hiloConexiones.EliminarEscuchadorMensajes(mensajeClienteEscuchador);
+    }
+    
+    public void AgregarEscuchadorConexiones(ConexionEscuchador conexionEscuchador) {
+        hiloConexiones.AgregarEscuchadorConexiones(conexionEscuchador);
+        System.out.println("Agregado Nuevo escuchador de conexiones!");
+        System.out.println("Tamanho lista EscuchadorConexiones = " + hiloConexiones.getListaEscuchadorConexiones().size());
+    }
+    
+    public void EliminarEscuchadorConexiones(ConexionEscuchador conexionEscuchador) {
+        hiloConexiones.EliminarEscuchadorConexiones(conexionEscuchador);
     }
     
 }

@@ -21,8 +21,10 @@ public class ReglaDAO {
     
     public static List<Regla> LeerReglas() {
         session = HibernateUtil.getSessionFactory().openSession();
+        session.beginTransaction();
         Query query = session.createQuery("from Regla");
         List<Regla> lista = query.list();
+        session.getTransaction().commit();
         session.close();
         return lista;
     }

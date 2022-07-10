@@ -1,5 +1,5 @@
 package conexiondb.pojos;
-// Generated May 19, 2022 5:44:29 PM by Hibernate Tools 4.3.1
+// Generated Jun 10, 2022 7:35:30 AM by Hibernate Tools 4.3.1
 
 
 

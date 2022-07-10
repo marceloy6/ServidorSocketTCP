@@ -15,6 +15,7 @@ import servidor.Hilos.HiloMensajesCliente;
 public class ClienteEvento {
     
     private int id;
+    private long id_tr;
     private HiloMensajesCliente hiloDatos;
     private Socket socketCliente;
     
@@ -51,6 +52,12 @@ public class ClienteEvento {
         this.hiloDatos = hiloDatos;
     }
 
-    
+    public long getId_tr() {
+        return id_tr;
+    }
+
+    public void setId_tr(long id_tr) {
+        this.id_tr = id_tr;
+    }
     
 }

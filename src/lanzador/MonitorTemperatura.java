@@ -6,12 +6,16 @@
 package lanzador;
 
 import conexiondb.dao.ReglaDAO;
+import conexiondb.dao.SensorDAO;
 import conexiondb.dao.TemperaturaDAO;
 import conexiondb.pojos.Regla;
+import conexiondb.pojos.Sensor;
 import conexiondb.pojos.Temperatura;
 import java.net.Socket;
+import java.util.Date;
 import java.util.List;
 import servidor.Cliente.ClienteEvento;
+import servidor.Escuchadores.ConexionEscuchador;
 import servidor.Escuchadores.MensajeClienteEscuchador;
 import servidor.ServidorSocketTCPV1;
 
@@ -19,7 +23,7 @@ import servidor.ServidorSocketTCPV1;
  *
  * @author Marcelo
  */
-public class MonitorTemperatura implements MensajeClienteEscuchador{
+public class MonitorTemperatura implements MensajeClienteEscuchador, ConexionEscuchador{
     
     static List<Regla> lista = ReglaDAO.LeerReglas();
     static Regla reglacritica;
@@ -37,6 +41,7 @@ public class MonitorTemperatura implements MensajeClienteEscuchador{
     public void Iniciar(String[] args) {
         ServidorSocketTCPV1.main(args);
         ServidorSocketTCPV1.AgregarEscuchadorMensajes(this);
+        ServidorSocketTCPV1.AgregarEscuchadorConexiones(this);
     }
 
     @Override
@@ -50,6 +55,14 @@ public class MonitorTemperatura implements MensajeClienteEscuchador{
 
         //insertar los valores en la base de datos;
         if (temperatura != null) {
+            // Actualizamos los datos del sensor 
+            System.out.println("ACTUALIZANDO CLIENTE ID= " + clienteEvento.getId_tr());
+            if (SensorDAO.ActualizarSensorPorIdsensor(temperatura)>0) {
+                SensorDAO.Depurar(clienteEvento.getId_tr());
+            } else {
+                SensorDAO.ActualizarSensorPorId(clienteEvento.getId_tr(), temperatura);
+            }
+
             TemperaturaDAO.ingresarTemperatura(temperatura);
 
             //obtener  la notificacion y correo para cada Temperatura recibida por el ESP8266
@@ -57,7 +70,7 @@ public class MonitorTemperatura implements MensajeClienteEscuchador{
             System.out.println("NOTIFICACION PARA ESTA TEMPERATURA ES: " + notificacion[1] + " PARA: " + notificacion[0]);
             
             //Compara si Temperatura esta en una Regla Critica para enviar un correo electronico
-            NotificarSiCumpleRegla(temperatura.getTemperatura(), reglacritica);
+            NotificarSiCumpleRegla(temperatura.getTemperatura(), reglacritica);            
         } else {
             System.err.println("El Mensaje no es Tipo Temperatura!");
         }
@@ -108,19 +121,19 @@ public class MonitorTemperatura implements MensajeClienteEscuchador{
         if (mensaje != null && !mensaje.trim().isEmpty()) {
             Temperatura tobjeto;
             try {
-                String temperatura = "temperatura=";
-                String humedad = "humedad=";
-                String mac = "mac=";
-                String tiempo = "tiempo=";
+                String mac = "ID=";
+                String temperatura = "Temp=";
+                String humedad = "Hum=";
+                String tiempo = "Tiempo=";
+                
+                int posVMAC = mensaje.lastIndexOf(mac) + mac.length();
+                String vmac = mensaje.substring(posVMAC, posVMAC + 17);
 
                 int posVT = mensaje.lastIndexOf(temperatura) + temperatura.length();
                 String vt = mensaje.substring(posVT, posVT + 5);
 
                 int posVH = mensaje.lastIndexOf(humedad) + humedad.length();
                 String vh = mensaje.substring(posVH, posVH + 5);
-
-                int posVMAC = mensaje.lastIndexOf(mac) + mac.length();
-                String vmac = mensaje.substring(posVMAC, posVMAC + 17);
 
                 int posVTiempo = mensaje.lastIndexOf(tiempo) + tiempo.length();
                 String vtiempo = mensaje.substring(posVTiempo, mensaje.length());
@@ -140,6 +153,86 @@ public class MonitorTemperatura implements MensajeClienteEscuchador{
             return tobjeto;
         } else
             return null;
+    }
+    
+//    public Sensor ObtenerDatosSensor(String mensaje){
+//        if (mensaje != null && !mensaje.trim().isEmpty()) {
+//            Sensor tobjeto;
+//            try {
+//                String mac = "ID=";
+//                String temperatura = "Temp=";
+//                String humedad = "Hum=";
+//                String tiempo = "Tiempo=";
+//                
+//                int posVMAC = mensaje.lastIndexOf(mac) + mac.length();
+//                String vmac = mensaje.substring(posVMAC, posVMAC + 17);
+//
+//                int posVT = mensaje.lastIndexOf(temperatura) + temperatura.length();
+//                String vt = mensaje.substring(posVT, posVT + 5);
+//
+//                int posVH = mensaje.lastIndexOf(humedad) + humedad.length();
+//                String vh = mensaje.substring(posVH, posVH + 5);
+//
+//                int posVTiempo = mensaje.lastIndexOf(tiempo) + tiempo.length();
+//                String vtiempo = mensaje.substring(posVTiempo, mensaje.length());
+//
+//                tobjeto = new Sensor();
+//                tobjeto.setIdsensor(vmac);
+//                tobjeto.setTemperatura(Float.parseFloat(vt));
+//                tobjeto.setHumedad(Float.parseFloat(vh));
+//                tobjeto.setFechalectura(Long.parseLong(vtiempo));
+//            } catch (NumberFormatException numberFormatException) {
+//                System.err.println("ERROR al parsear los numeros. " + numberFormatException.getMessage());
+//                return null;
+//            } catch (Exception e) {
+//                System.err.println("String no compatible. " + e.getMessage());
+//                return null;
+//            }
+//            return tobjeto;
+//        } else
+//            return null;
+//    }
+    
+//    private String leerValor(String cadena, int desde) {
+//        int i = desde;
+//        String res = ""; res.s
+//        //ID=3232|Tem=32.2
+//        while(i<cadena.length() && i) {
+//            i++;
+//        }
+//        return res;
+//    }
+
+    @Override
+    public void onClienteConectado(ClienteEvento cliente) {
+        //Agregar Sensor a la DB
+        //pero cliente evento no tiene ningun valor del tipo Sensor
+        Sensor sensor =  new Sensor();
+        System.out.println("Insertando en BD a sensor " + Long.valueOf(cliente.hashCode()));
+        
+        sensor.setIdsensor("nan");
+        sensor.setFechaconexion(new Date().getTime());
+        sensor.setTemperatura(0);
+        sensor.setHumedad(0);
+        sensor.setFechalectura(0);
+        sensor.setConectado(true);
+        SensorDAO.InsertarSensor(sensor, cliente);
+    }
+
+    @Override
+    public void onClienteDesconectado(ClienteEvento cliente) {
+        //Actulizar estado de sensor en DB
+        Sensor sensor = SensorDAO.getSensorFromId(cliente.getId_tr());
+        if (sensor!=null) {
+            System.out.println(this.getClass().getName() + " " + sensor.getIdsensor());
+            if (sensor.getIdsensor().equals("nan")) {
+                SensorDAO.Eliminar(sensor);
+            } else {
+                sensor.setConectado(false);
+                SensorDAO.ActualizarSensor(sensor);
+            }
+        } else
+            System.out.println("No se pudo Actualizar al Sensor");
     }
     
     
